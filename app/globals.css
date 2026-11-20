@@ -2,83 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
-body,
 :root {
-  height: 100%
+  --bg: 250 248 244;
+  --panel: 255 255 255;
+  --line: 228 224 216;
+  --fg: 28 27 25;
+  --muted: 112 107 99;
+  --accent: 196 84 44;
+  color-scheme: light;
 }
- 
-@layer base {
+
+@media (prefers-color-scheme: dark) {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
- 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
- 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
- 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
- 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
- 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --ring: 215 20.2% 65.1%;
- 
-    --radius: 0.5rem;
-  }
- 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
- 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
- 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
- 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
- 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
- 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
- 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
- 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 85.7% 97.3%;
- 
-    --ring: 217.2 32.6% 17.5%;
+    --bg: 20 19 18;
+    --panel: 30 29 27;
+    --line: 52 50 47;
+    --fg: 236 233 227;
+    --muted: 156 150 141;
+    --accent: 236 128 86;
+    color-scheme: dark;
   }
 }
- 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--fg));
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn {
+  @apply inline-flex items-center gap-1.5 rounded-full border border-line bg-panel px-3.5 py-1.5 text-sm font-medium transition hover:border-fg/30 disabled:opacity-50;
+}
+.btn-primary {
+  @apply inline-flex items-center gap-1.5 rounded-full bg-fg px-4 py-1.5 text-sm font-medium text-bg transition hover:opacity-90 disabled:opacity-50;
+}
+.input {
+  @apply w-full rounded-full border border-line bg-panel px-4 py-2 text-sm outline-none placeholder:text-muted focus:border-fg/40;
+}
+.chip {
+  @apply inline-flex items-center gap-1 rounded-full border border-line bg-panel px-2.5 py-0.5 text-xs;
 }

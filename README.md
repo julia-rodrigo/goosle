@@ -1,34 +1,55 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Goosle
 
-## Getting Started
+A calm way to watch YouTube. You see what you chose to see, and nothing else.
 
-First, run the development server:
+- **Your feed is only your subscriptions**, newest first. No algorithm, no "recommended for you".
+- **No Shorts, no AI slop.** Shorts are hidden, and videos whose title, channel or description match AI/slop phrases ("ai generated", "#aiart", "suno", "reddit stories", …) are filtered out. You can edit the list.
+- **Block anything.** Block a channel with one click, or block words and topics.
+- **No recommendations on the watch page.** The space beside the player shows your Watch later list instead. The player is set so the end screen only shows the same channel.
+- **No ads on the site, no account, no tracking.** Subscriptions, history and Watch later live in your browser. Export/import them from Filters.
+- **Bring your YouTube subscriptions** from a Google Takeout `subscriptions.csv`, or add channels by `@handle` or link.
+- Paste any YouTube link into the search box to jump straight to it.
+
+Every filter shows how many videos it hid, with a "Show anyway" link, so nothing disappears silently.
+
+## Running it
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+npm install
+npm run dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+It works without any setup. Optionally, add a free YouTube Data API key for more reliable search and fuller video details (views, length, description on the watch page):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+# then put your key in YOUTUBE_API_KEY
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## How it gets data
 
-## Learn More
+| What | Without a key | With `YOUTUBE_API_KEY` |
+| --- | --- | --- |
+| Subscription feed | Public channel RSS feeds | same (RSS is free and costs no quota) |
+| Search | Reads the public results page; Shorts shelves and ads are dropped | YouTube Data API |
+| Video page | oEmbed (title, channel) | YouTube Data API (plus views, date, description) |
+| Adding a channel | Reads the channel page for its id | YouTube Data API |
 
-To learn more about Next.js, take a look at the following resources:
+Videos play through the official embedded player from `youtube-nocookie.com`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## About ads
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+Goosle itself has no ads. Videos still play in YouTube's own embedded player, and YouTube may show its ads there on some monetized videos; Goosle doesn't strip them, since that would mean bypassing YouTube's player. If you have YouTube Premium and are signed in to YouTube in the same browser, the embedded player is ad-free.
 
-## Deploy on Vercel
+## Project layout
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+app/              pages (feed, search, watch, channel, subscriptions, later, history, settings)
+app/api/          server routes that talk to YouTube
+lib/youtube.ts    all YouTube access (RSS, API, page fallback)
+lib/filters.ts    Shorts / slop / blocked-word / blocked-channel rules
+lib/store.ts      local-only user data (localStorage)
+components/       UI pieces
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+The previous version of this repo is kept on the `legacy` branch.
