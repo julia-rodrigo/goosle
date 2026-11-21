@@ -20,6 +20,7 @@ import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
 import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -61,22 +62,22 @@ class MainActivity : ComponentActivity() {
 /* Theme                                                                 */
 /* -------------------------------------------------------------------- */
 
-private val Accent = Color(0xFFC4542C)
-private val AccentDark = Color(0xFFEC8056)
+private val Accent = Color(0xFF111111)
+private val AccentDark = Color(0xFFF2F2F2)
 
 @Composable
 fun GoosleTheme(content: @Composable () -> Unit) {
     val dark = isSystemInDarkTheme()
     val scheme = if (dark) darkColorScheme(
-        primary = AccentDark, onPrimary = Color(0xFF1C1B19),
-        background = Color(0xFF141312), surface = Color(0xFF1E1D1B), surfaceVariant = Color(0xFF2A2826),
-        onBackground = Color(0xFFECE9E3), onSurface = Color(0xFFECE9E3), onSurfaceVariant = Color(0xFF9C968D),
-        outline = Color(0xFF34322F),
+        primary = AccentDark, onPrimary = Color(0xFF111111),
+        background = Color(0xFF0B0B0B), surface = Color(0xFF161616), surfaceVariant = Color(0xFF222222),
+        onBackground = Color(0xFFF2F2F2), onSurface = Color(0xFFF2F2F2), onSurfaceVariant = Color(0xFF9A9A9A),
+        outline = Color(0xFF2E2E2E), secondaryContainer = Color(0xFF2E2E2E), onSecondaryContainer = Color(0xFFF2F2F2),
     ) else lightColorScheme(
         primary = Accent, onPrimary = Color.White,
-        background = Color(0xFFFAF8F4), surface = Color.White, surfaceVariant = Color(0xFFF1EDE6),
-        onBackground = Color(0xFF1C1B19), onSurface = Color(0xFF1C1B19), onSurfaceVariant = Color(0xFF6F6A62),
-        outline = Color(0xFFE4E0D8),
+        background = Color(0xFFF7F7F7), surface = Color.White, surfaceVariant = Color(0xFFEFEFEF),
+        onBackground = Color(0xFF111111), onSurface = Color(0xFF111111), onSurfaceVariant = Color(0xFF666666),
+        outline = Color(0xFFE2E2E2), secondaryContainer = Color(0xFFE6E6E6), onSecondaryContainer = Color(0xFF111111),
     )
     MaterialTheme(colorScheme = scheme, content = content)
 }
@@ -139,24 +140,30 @@ private fun Header(prefs: Prefs, refresh: () -> Unit) {
     }
 }
 
-/** The goose with dragon horns. It nods and blinks every few seconds. */
+/** The goose: dragon horns grow from its head, then it blinks. Replays now and then. */
 @OptIn(ExperimentalAnimationGraphicsApi::class)
 @Composable
 private fun Logo() {
     val image = AnimatedImageVector.animatedVectorResource(R.drawable.goose_animated)
     var atEnd by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
+        delay(300)
+        atEnd = true
         while (true) {
-            delay(600)
-            atEnd = !atEnd
-            delay(3400)
+            delay(9000)
+            atEnd = false // horns shrink back…
+            delay(1200)
+            atEnd = true  // …and grow again
         }
     }
-    Box(Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF1F2A2E))) {
+    Box(
+        Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
+            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)),
+    ) {
         Image(
             painter = rememberAnimatedVectorPainter(image, atEnd),
             contentDescription = "Goosle",
-            modifier = Modifier.fillMaxSize().scale(1.35f),
+            modifier = Modifier.fillMaxSize().scale(1.3f),
         )
     }
 }

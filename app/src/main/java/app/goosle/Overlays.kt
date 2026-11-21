@@ -174,7 +174,7 @@ class Overlays(private val service: AccessibilityService) {
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             isLongClickable = false // no pasting
             setTextIsSelectable(false)
-            background = rounded(Color.parseColor("#23211F"), dp(12).toFloat(), Color.parseColor("#4A4743"))
+            background = rounded(Color.parseColor("#1E1E1E"), dp(12).toFloat(), Color.parseColor("#444444"))
             setPadding(dp(14), dp(12), dp(14), dp(12))
             addTextChangedListener(object : TextWatcher {
                 override fun beforeTextChanged(s: CharSequence?, a: Int, b: Int, c: Int) {}
@@ -252,7 +252,7 @@ class Overlays(private val service: AccessibilityService) {
     private fun breathingCircle() = View(service).apply {
         background = GradientDrawable(
             GradientDrawable.Orientation.TOP_BOTTOM,
-            intArrayOf(Color.parseColor("#E0703F"), Color.parseColor("#C4542C")),
+            intArrayOf(Color.parseColor("#FFFFFF"), Color.parseColor("#9A9A9A")),
         ).apply { shape = GradientDrawable.OVAL }
         // In for 4 seconds, out for 4.
         listOf("scaleX", "scaleY").forEach { prop ->
@@ -284,7 +284,7 @@ class Overlays(private val service: AccessibilityService) {
     }
 
     private fun primary(text: String, onClick: () -> Unit) = button(text, BUTTON_FG, FG, FG, onClick)
-    private fun secondary(text: String, onClick: () -> Unit) = button(text, FG, Color.TRANSPARENT, Color.parseColor("#4A4743"), onClick)
+    private fun secondary(text: String, onClick: () -> Unit) = button(text, FG, Color.TRANSPARENT, Color.parseColor("#444444"), onClick)
 
     private fun button(text: String, fg: Int, bg: Int, stroke: Int, onClick: () -> Unit) = Button(service).apply {
         this.text = text
@@ -319,9 +319,9 @@ class Overlays(private val service: AccessibilityService) {
 
     companion object {
         const val LIMIT_PHRASE = "I choose to spend 10 more minutes here"
-        private val BG = Color.parseColor("#F5141312")
-        private val FG = Color.parseColor("#F3EFE8")
-        private val MUTED = Color.parseColor("#BDB6AB")
-        private val BUTTON_FG = Color.parseColor("#1C1B19")
+        private val BG = Color.parseColor("#F50B0B0B")
+        private val FG = Color.parseColor("#F2F2F2")
+        private val MUTED = Color.parseColor("#A8A8A8")
+        private val BUTTON_FG = Color.parseColor("#111111")
     }
 }

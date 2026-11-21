@@ -1,6 +1,6 @@
 # Goosle for Android
 
-<img src="docs/icon.png" width="96" alt="Goosle logo: a goose with dragon horns">
+<img src="docs/icon.png" width="96" alt="Goosle logo: a black goose silhouette with dragon horns">
 
 An Android app that makes YouTube, Instagram, Facebook and TikTok calmer, inside the real apps.
 
