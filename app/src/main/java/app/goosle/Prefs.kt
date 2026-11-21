@@ -90,6 +90,30 @@ class Prefs(context: Context) {
         get() = list("debug.ids")
         set(v) = putList("debug.ids", v.takeLast(300))
 
+    /* ---------------- Ad blocker (all apps) ---------------- */
+
+    var adBlock: Boolean
+        get() = sp.getBoolean("adblock.on", false)
+        set(v) = sp.edit().putBoolean("adblock.on", v).apply()
+
+    /** DNS provider that non-blocked lookups go to. */
+    var adBlockUpstream: String
+        get() = sp.getString("adblock.upstream", "1.1.1.1") ?: "1.1.1.1"
+        set(v) = sp.edit().putString("adblock.upstream", v).apply()
+
+    var adBlockAllowedDomains: List<String>
+        get() = list("adblock.allow")
+        set(v) = putList("adblock.allow", v)
+
+    var adBlockExtraDomains: List<String>
+        get() = list("adblock.extra")
+        set(v) = putList("adblock.extra", v)
+
+    /** Apps whose traffic skips the blocker entirely (package names), for apps that break. */
+    var adBlockExcludedApps: List<String>
+        get() = list("adblock.exclude")
+        set(v) = putList("adblock.exclude", v)
+
     /* ---------------- Usage (per day, per app) ---------------- */
 
     private fun today() = LocalDate.now().toString()

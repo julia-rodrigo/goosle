@@ -5,11 +5,14 @@ import android.content.ClipboardManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.net.VpnService
 import android.os.Bundle
 import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,7 +38,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -88,7 +94,8 @@ fun Home(prefs: Prefs) {
     }
     LaunchedEffect(Unit) { while (true) { delay(10_000); refresh() } }
 
-    key(version) {
+    run {
+        @Suppress("UNUSED_VARIABLE") val readToRecompose = version
         Scaffold(containerColor = MaterialTheme.colorScheme.background) { pad ->
             Column(
                 Modifier
@@ -101,6 +108,7 @@ fun Home(prefs: Prefs) {
                 Setup(ctx, prefs)
                 Focus(prefs, refresh)
                 AppsCard(prefs, refresh)
+                AdBlockCard(ctx, prefs, refresh)
                 Breaks(prefs, refresh)
                 Today(prefs)
                 Extras(ctx, prefs, refresh)
@@ -206,6 +214,154 @@ private fun AppsCard(prefs: Prefs, refresh: () -> Unit) {
                     Text("TikTok is all short video, so it can be allowed with limits or blocked.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+        }
+    }
+}
+
+/* -------------------------------------------------------------------- */
+/* Ad blocker                                                            */
+/* -------------------------------------------------------------------- */
+
+private val DNS_PROVIDERS = listOf(
+    "1.1.1.1" to "Cloudflare",
+    "9.9.9.9" to "Quad9",
+    "8.8.8.8" to "Google",
+    "94.140.14.14" to "AdGuard (blocks extra ads)",
+)
+
+@Composable
+private fun AdBlockCard(ctx: Context, prefs: Prefs, refresh: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var updating by remember { mutableStateOf(false) }
+    var showRecent by remember { mutableStateOf(false) }
+    var showAdvanced by remember { mutableStateOf(false) }
+
+    val consent = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+        if (VpnService.prepare(ctx) == null) {
+            prefs.adBlock = true
+            AdBlockService.start(ctx)
+        } else {
+            Toast.makeText(ctx, "Goosle needs the VPN permission to block ads", Toast.LENGTH_LONG).show()
+        }
+        refresh()
+    }
+
+    fun setOn(on: Boolean) {
+        if (on) {
+            val ask = VpnService.prepare(ctx)
+            if (ask != null) consent.launch(ask) else { prefs.adBlock = true; AdBlockService.start(ctx) }
+        } else {
+            prefs.adBlock = false
+            AdBlockService.stop(ctx)
+        }
+        refresh()
+    }
+
+    fun restartIfOn() {
+        if (prefs.adBlock) { AdBlockService.stop(ctx); AdBlockService.start(ctx) }
+    }
+
+    // Restart after an app update/reboot if it was on and still permitted.
+    LaunchedEffect(Unit) {
+        if (prefs.adBlock && AdBlockService.status != "on" && VpnService.prepare(ctx) == null) AdBlockService.start(ctx)
+    }
+
+    Card(highlight = !prefs.adBlock) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                Text("Ad blocker for all apps", fontWeight = FontWeight.SemiBold, fontSize = 17.sp)
+                Text(
+                    "Blocks ads and trackers in apps, games and browsers across the whole phone.",
+                    fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = prefs.adBlock, onCheckedChange = ::setOn)
+        }
+
+        if (prefs.adBlock) {
+            Blocklist.load(ctx)
+            Text(
+                "Blocked ${"%,d".format(AdBlockService.blockedCount.get())} ad and tracker requests since it started. " +
+                    "Using ${"%,d".format(Blocklist.size)} domains (${Blocklist.source}).",
+                fontSize = 14.sp,
+            )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = { showRecent = !showRecent }) { Text(if (showRecent) "Hide blocked" else "What was blocked") }
+                OutlinedButton(
+                    enabled = !updating,
+                    onClick = {
+                        updating = true
+                        scope.launch {
+                            val msg = withContext(Dispatchers.IO) {
+                                runCatching { "Updated: ${"%,d".format(Blocklist.update(ctx))} domains" }
+                                    .getOrElse { "Couldn't update: ${it.message}" }
+                            }
+                            updating = false
+                            Toast.makeText(ctx, msg, Toast.LENGTH_LONG).show()
+                            refresh()
+                        }
+                    },
+                ) { Text(if (updating) "Updating…" else "Update list") }
+            }
+            if (showRecent) {
+                val recent = synchronized(AdBlockService.recent) { AdBlockService.recent.toList().asReversed() }
+                Text(
+                    if (recent.isEmpty()) "Nothing yet." else recent.take(40).joinToString("\n"),
+                    fontFamily = FontFamily.Monospace, fontSize = 11.sp,
+                    modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant).padding(8.dp),
+                )
+                Text("If something stops working, add its domain to Allowed below.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+
+        Text(
+            "How it works: Goosle runs a local VPN on your phone that only handles address lookups. Lookups for ad and " +
+                "tracker servers are refused; everything else goes to your chosen DNS provider. Your browsing itself " +
+                "doesn't go through it.",
+            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            "It can't remove ads inside YouTube, Instagram, Facebook or TikTok, because those come from the same servers as the " +
+                "videos and posts. Goosle's Shorts/Reels hiding and YouTube ad skipping cover those apps instead.",
+            fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+
+        Row(Modifier.fillMaxWidth().clickable { showAdvanced = !showAdvanced }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Settings", Modifier.weight(1f), fontWeight = FontWeight.Medium)
+            Text(if (showAdvanced) "▲" else "▼", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        if (showAdvanced) {
+            var open by remember { mutableStateOf(false) }
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text("DNS provider", Modifier.weight(1f), fontSize = 15.sp)
+                Box {
+                    OutlinedButton(onClick = { open = true }) {
+                        Text(DNS_PROVIDERS.firstOrNull { it.first == prefs.adBlockUpstream }?.second ?: prefs.adBlockUpstream)
+                    }
+                    DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+                        DNS_PROVIDERS.forEach { (ip, name) ->
+                            DropdownMenuItem(text = { Text("$name ($ip)") }, onClick = {
+                                open = false; prefs.adBlockUpstream = ip; restartIfOn(); refresh()
+                            })
+                        }
+                    }
+                }
+            }
+            Text("Allowed domains (never blocked)", fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 6.dp))
+            WordList(prefs.adBlockAllowedDomains, "e.g. example.com", onChange = { prefs.adBlockAllowedDomains = it; refresh() })
+            Text("Extra domains to block", fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 6.dp))
+            WordList(prefs.adBlockExtraDomains, "e.g. ads.example.com", onChange = { prefs.adBlockExtraDomains = it; refresh() })
+            Text("Apps that skip the blocker", fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 6.dp))
+            Text("For an app that breaks with the blocker on. Use its package name (Settings → Apps → the app; it's often in the Play Store link).",
+                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            WordList(prefs.adBlockExcludedApps, "e.g. com.example.bank", onChange = { prefs.adBlockExcludedApps = it; restartIfOn(); refresh() })
+            Text(
+                "To keep it on after a restart: Android Settings → Network → VPN → Goosle ⚙ → Always-on VPN. " +
+                    "Only one VPN app can run at a time. If Private DNS is set to a specific provider, set it to Automatic or Off.",
+                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(onClick = { runCatching { ctx.startActivity(Intent(Settings.ACTION_VPN_SETTINGS)) } }) { Text("Open VPN settings") }
         }
     }
 }
