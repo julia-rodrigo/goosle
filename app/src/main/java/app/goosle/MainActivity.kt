@@ -14,13 +14,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
-import androidx.compose.animation.graphics.res.animatedVectorResource
-import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
-import androidx.compose.animation.graphics.vector.AnimatedImageVector
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -37,6 +32,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -140,30 +136,15 @@ private fun Header(prefs: Prefs, refresh: () -> Unit) {
     }
 }
 
-/** The goose: dragon horns grow from its head, then it blinks. Replays now and then. */
-@OptIn(ExperimentalAnimationGraphicsApi::class)
+/** Goosle's logo: a white goose head with an orange beak, on black. Same drawing as the app icon. */
 @Composable
 private fun Logo() {
-    val image = AnimatedImageVector.animatedVectorResource(R.drawable.goose_animated)
-    var atEnd by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        delay(300)
-        atEnd = true
-        while (true) {
-            delay(9000)
-            atEnd = false // horns shrink back…
-            delay(1200)
-            atEnd = true  // …and grow again
-        }
-    }
-    Box(
-        Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(Color.White)
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(16.dp)),
-    ) {
+    Box(Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF111111))) {
         Image(
-            painter = rememberAnimatedVectorPainter(image, atEnd),
+            painter = painterResource(R.drawable.goose),
             contentDescription = "Goosle",
-            modifier = Modifier.fillMaxSize().scale(1.3f),
+            // The icon drawing has a margin for launcher masks; enlarge it to fill the tile.
+            modifier = Modifier.fillMaxSize().scale(1.5f),
         )
     }
 }
