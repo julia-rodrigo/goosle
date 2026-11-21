@@ -1,0 +1,18 @@
+main { max-width: 720px; margin: 0 auto; padding: 32px 16px 64px; }
+.top { display: flex; gap: 14px; align-items: center; margin-bottom: 24px; }
+.top h1 { font-size: 24px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 16px; }
+.card.highlight { border-color: color-mix(in srgb, var(--accent) 55%, var(--line)); }
+.card h2 { font-size: 17px; margin-bottom: 6px; }
+.card h3 { font-size: 14px; margin: 18px 0 4px; }
+.card > p { margin-bottom: 10px; }
+.small { font-size: 13px; }
+.num { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); white-space: nowrap; }
+.num .input { width: 76px; text-align: right; color: var(--fg); }
+.list form { display: flex; gap: 8px; margin: 8px 0; }
+.list form .input { flex: 1; min-width: 0; }
+details { border-top: 1px solid var(--line); padding: 10px 0; }
+details:first-of-type { margin-top: 16px; }
+summary { cursor: pointer; font-weight: 550; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+@media (max-width: 520px) { .row { flex-wrap: wrap; } }
