@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Goosle</string>
+    <string name="service_description">Lets Goosle see which app and screen is open so it can leave Shorts and Reels, block apps you chose to block, and show break reminders and daily limits. Screen content is only checked inside YouTube, Instagram, Facebook and TikTok, and nothing is sent anywhere.</string>
+</resources>

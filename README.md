@@ -1,64 +1,68 @@
-# Goosle
+# Goosle for Android
 
-A browser extension that makes YouTube, Instagram, Facebook and TikTok calmer. You see what you chose to see, not what an algorithm picked to keep you scrolling.
+An Android app that makes YouTube, Instagram, Facebook and TikTok calmer, inside the real apps.
 
 ## What it does
 
-**Hides**
-- **Shorts and Reels.** Shorts shelves, tabs and buttons are removed. A Shorts link opens as a normal video. Reels and Explore pages are blocked.
-- **Ads and sponsored posts.** Ad slots, promoted videos and "Sponsored" posts are hidden. YouTube video ads are skipped as soon as YouTube allows, and muted while they play.
-- **Algorithm feeds.** The YouTube home feed, the "up next" sidebar, end screens and Trending; Instagram Explore and "Suggested for you"; Facebook's Video feed and suggested posts.
-- **AI slop.** Videos and posts matching phrases like "ai generated", "#aiart", "suno", "sora" or "reddit stories". The list is editable.
-- **News** (off by default). Hides news channels and news-style words.
-- **Entertainment** (off by default). Hides pranks, reactions, challenges, vlogs, gameplay and similar.
-- Any **channel, account, word or topic** you add to your block lists.
+- **No Shorts, no Reels.** When YouTube Shorts or Instagram Reels open, Goosle backs straight out of them. Instagram's Explore page too.
+- **Block whole apps.** TikTok is blocked by default (it's all short video). Any app can be set to *Allow*, *No Shorts/Reels* or *Block*.
+- **This week's focus.** Tell Goosle what you're learning this week. When you open YouTube, it asks *"What are you here for?"* and offers your topics, which open as a YouTube search. "Something else" unlocks after 5 seconds.
+- **Break reminders.** After 20 minutes in an app (adjustable), a full-screen break covers it: breathe with the circle, and "I'm back" unlocks after 60 seconds.
+- **Daily limits.** After 60 minutes a day in an app (adjustable), it's locked until tomorrow. Typing a sentence gets 10 more minutes; pasting is blocked.
+- **Grey screen** inside these apps only, switching back to colour when you leave (needs a one-time setup step, see below).
+- **Skips YouTube ads** by tapping "Skip ad" the moment it appears. Unskippable ads still play.
+- **Today's minutes** per app, on the main screen.
 
-**Shows you what you asked for**
-- **This week's focus.** Tell Goosle what you're learning this week, like "japanese grammar" or "sourdough". The YouTube home page becomes a short list of those topics. With "Show me" set to focus, only videos about them appear anywhere on YouTube.
-- **"Show me" modes:** everything, only this week's focus, only tutorials, only music, or only your favourite channels.
-- **Video length:** long-form only by default (8 minutes and up). You can change the minimum and maximum.
-- **Following-only feeds:** Instagram opens on the chronological Following feed, and Facebook opens on Most recent. TikTok is blocked by default, or can be set to Following only.
-
-**Helps you stop**
-- **Grey screen.** Turns these sites black and white.
-- **Break reminders.** After 20 minutes (adjustable), the page is covered and the video paused until you've done a 60-second breathing break.
-- **Daily limit.** After 60 minutes on a site in one day (adjustable), it's locked. You can get 10 more minutes by typing a sentence; pasting it doesn't work.
-
-A small "Goosle hid N" button in the corner shows how many items were hidden and why. Click it to see them.
-
-Everything runs in your browser. Nothing is sent anywhere. Settings sync through your browser account, and time tracking stays on your device.
+Everything stays on the phone. Nothing is sent anywhere.
 
 ## Install
 
-**Chrome, Edge, Brave, Arc, Opera**
-1. Download this repository (Code → Download ZIP) and unzip it.
-2. Go to `chrome://extensions` and turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick the unzipped folder (the one with `manifest.json`).
-4. The settings page opens. Add this week's topics.
+1. Get `app-release.apk` (build it with the steps below, or from a release if one is published) and open it on your phone. Allow installing from your browser/files app when asked.
+2. Open Goosle and tap **Open accessibility settings** → *Installed apps* (or *Downloaded apps*) → **Goosle** → turn it on.
+   - On Android 13+, if it says **"Restricted setting"**: go to Settings → Apps → Goosle → ⋮ (top right) → **Allow restricted settings**, then try again.
+3. Add this week's topics, and choose what to do with each app.
 
-**Firefox**
-1. Go to `about:debugging#/runtime/this-firefox`.
-2. Click **Load Temporary Add-on** and pick `manifest.json`.
-   Firefox removes temporary add-ons when it restarts; a permanent install needs the extension to be signed through addons.mozilla.org.
+### Grey screen (optional, one time)
+
+Android only lets an app switch the screen to black and white after a grant from a computer:
+
+1. On the phone, turn on Developer options → USB debugging.
+2. Connect it to a computer with [adb](https://developer.android.com/tools/releases/platform-tools) and run:
+   ```
+   adb shell pm grant app.goosle android.permission.WRITE_SECURE_SETTINGS
+   ```
+
+No computer? *Settings → Digital Wellbeing → Bedtime mode → Grayscale* greys the whole phone instead.
 
 ## Limits
 
-- **Websites only.** Browser extensions can't change the phone apps for Instagram, TikTok, Facebook or YouTube. On a phone, use the websites in a browser that supports extensions (Firefox for Android, Kiwi, Orion on iOS, or Safari with a Safari Web Extension build), and the phone's own screen-time limits for the apps.
-- **Sites change their markup.** These sites redesign often. YouTube rules are tested against the live site; the Instagram, Facebook and TikTok rules are written against their current structure but couldn't be tested from the build environment, so some may need adjusting.
-- **Ads.** Ad slots and sponsored posts are hidden, and skippable YouTube ads are skipped and muted. Unskippable YouTube video ads still play, muted. For full ad blocking, use [uBlock Origin](https://ublockorigin.com/) alongside Goosle.
-- **Word matching is simple.** It matches whole words and phrases, so focus topics can let in the occasional off-topic video, and the slop filter only catches videos that mention AI in their text.
+- **Android only.** iPhones don't allow any app to see inside other apps.
+- **Screen detection uses view IDs, which apps can change in updates.** YouTube and Instagram IDs are built in. If an update lets Shorts or Reels through, use the **Detection helper** at the bottom of the app: record IDs while opening Reels, then add the new one for that app. Facebook hides its IDs, so Facebook Reels need this setup before "No Reels" is offered.
+- **The built-in IDs haven't been tested on a real phone yet**, because the build machine has no emulator. Expect to use the Detection helper at least once.
+- **Feeds can't be filtered post by post** inside the apps. Goosle can leave or cover a screen, not remove single videos or sponsored posts from a feed.
+- **Not on Google Play.** Play restricts accessibility-service apps, so this is installed directly from the APK.
 
-## Project layout
+## Build
 
-```
-manifest.json            extension manifest (MV3)
-src/background.js        time tracking for breaks and daily limits
-src/shared/defaults.js   default settings and word lists
-src/shared/filter.js     the hide/show rules (pure functions)
-src/content/common.js    shared engine: page watching, grey screen, overlays, breaks
-src/content/*.js         per-site rules (youtube, instagram, facebook, tiktok)
-src/popup/               toolbar popup
-src/options/             settings page
+Needs JDK 17+ and the Android SDK (platform 36).
+
+```bash
+./gradlew assembleRelease
+# app/build/outputs/apk/release/app-release.apk
 ```
 
-Earlier versions of this repo: the original app is on the `legacy` branch, and the Goosle YouTube web app is in this branch's history (commit `fd9e71b`).
+The release build is signed with the debug key so it installs without extra setup. Use your own signing key before sharing it widely.
+
+## Code
+
+```
+app/src/main/java/app/goosle/
+  GoosleService.kt   accessibility service: detects apps/screens, times usage, triggers breaks and limits
+  Overlays.kt        full-screen block, break, limit and "what are you here for?" screens
+  Apps.kt            supported apps and the view IDs of their Shorts/Reels screens
+  Prefs.kt           settings and daily usage (on-device only)
+  Grayscale.kt       grey screen while a watched app is open
+  MainActivity.kt    the settings screen
+```
+
+Earlier versions are in git history: the browser extension (commit `f3f98bd`), the YouTube web app (`fd9e71b`), and the original app on the `legacy` branch.

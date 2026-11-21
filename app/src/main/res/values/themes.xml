@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Goosle" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+    </style>
+    <color name="bg">#FAF8F4</color>
+    <color name="accent">#C4542C</color>
+</resources>
