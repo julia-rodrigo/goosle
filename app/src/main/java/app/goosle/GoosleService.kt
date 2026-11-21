@@ -2,13 +2,13 @@ package app.goosle
 
 import android.accessibilityservice.AccessibilityService
 import android.content.Intent
+import android.graphics.Rect
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityNodeInfo
-import android.widget.Toast
 
 /**
  * Watches which app is on screen and what screen it's showing.
@@ -49,7 +49,7 @@ class GoosleService : AccessibilityService() {
 
     override fun onDestroy() {
         handler.removeCallbacksAndMessages(null)
-        if (::overlays.isInitialized) overlays.dismiss()
+        if (::overlays.isInitialized) overlays.dismissAll()
         Grayscale.set(this, false)
         super.onDestroy()
     }
@@ -68,9 +68,12 @@ class GoosleService : AccessibilityService() {
         if (event.eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) foregroundChanged(pkg)
 
         val app = Apps.forPackage(pkg) ?: return
-        if (!prefs.enabled) return
+        if (!prefs.enabled) {
+            overlays.dismissAll()
+            return
+        }
         val now = System.currentTimeMillis()
-        if (now - lastContentCheck < 250) return
+        if (now - lastContentCheck < 120) return
         lastContentCheck = now
         rootInActiveWindow?.let { checkScreen(app, pkg, it) }
     }
@@ -86,6 +89,7 @@ class GoosleService : AccessibilityService() {
         currentApp = app
 
         if (left != null) {
+            overlays.setCovers(emptyList())
             if (overlays.ownerKey == left.key) overlays.dismiss()
             Grayscale.set(this, false)
         }
@@ -124,16 +128,13 @@ class GoosleService : AccessibilityService() {
     private fun checkScreen(app: TargetApp, pkg: String, root: AccessibilityNodeInfo) {
         val mode = prefs.mode(app)
         if (mode == AppMode.BLOCK) {
+            overlays.setCovers(emptyList())
             if (!overlays.isShowing) overlays.showBlocked(app, ::goHome)
             return
         }
 
-        if (mode == AppMode.NO_SHORT_FORM) {
-            val ids = app.shortFormIds + prefs.extraShortFormIds(app)
-            val hit = ids.firstOrNull { visible(root, pkg, it) }
-                ?: app.discoverIds.firstOrNull { visible(root, pkg, it) }
-            if (hit != null) leaveShortForm(app)
-        }
+        if (mode == AppMode.NO_SHORT_FORM) hideShortForm(app, pkg, root)
+        else overlays.setCovers(emptyList())
 
         if (app == Apps.YOUTUBE && prefs.skipAds) skipAd(root, pkg)
 
@@ -145,12 +146,30 @@ class GoosleService : AccessibilityService() {
         return root.findAccessibilityNodeInfosByViewId(fullId).any { it.isVisibleToUser }
     }
 
-    private fun leaveShortForm(app: TargetApp) {
-        val now = System.currentTimeMillis()
-        if (now - lastBack < 1200) return
-        lastBack = now
-        performGlobalAction(GLOBAL_ACTION_BACK)
-        Toast.makeText(this, "Goosle: ${if (app == Apps.YOUTUBE) "Shorts" else "Reels"} are off", Toast.LENGTH_SHORT).show()
+    /**
+     * Paints over every Shorts/Reels entry point on screen so it can't be seen or tapped,
+     * and blocks the whole screen if a Shorts/Reels player opens anyway (from a link, say).
+     */
+    private fun hideShortForm(app: TargetApp, pkg: String, root: AccessibilityNodeInfo) {
+        val screen = Rect().also { root.getBoundsInScreen(it) }
+        if (screen.isEmpty) return
+        val result = Hider.scan(app, pkg, root, screen, prefs.extraShortFormIds(app))
+
+        if (result.playerOpen) {
+            overlays.setCovers(emptyList())
+            if (overlays.kind != "shortform") {
+                overlays.showShortFormBlocked(app, onBack = { performGlobalAction(GLOBAL_ACTION_BACK) }, onHome = ::goHome)
+                // Try to leave on its own; the block stays up until the player is really gone.
+                val now = System.currentTimeMillis()
+                if (now - lastBack > 1200) {
+                    lastBack = now
+                    performGlobalAction(GLOBAL_ACTION_BACK)
+                }
+            }
+        } else {
+            if (overlays.kind == "shortform" && overlays.ownerKey == app.key) overlays.dismiss()
+            overlays.setCovers(result.covers)
+        }
     }
 
     private fun skipAd(root: AccessibilityNodeInfo, pkg: String) {
@@ -195,7 +214,7 @@ class GoosleService : AccessibilityService() {
 
         val app = currentApp ?: return
         if (prefs.mode(app) == AppMode.BLOCK) return
-        if (overlays.isShowing && overlays.ownerKey == app.key) return
+        if (overlays.isShowing && overlays.ownerKey == app.key && overlays.kind != "shortform") return
 
         prefs.addTime(app, (TICK_MS / 1000).toInt())
         if (checkLimits(app)) return

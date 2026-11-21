@@ -202,12 +202,6 @@ private fun AppsCard(prefs: Prefs, refresh: () -> Unit) {
                         prefs.askIntention(app),
                     ) { prefs.setAskIntention(app, it); refresh() }
                 }
-                if (app == Apps.FACEBOOK && !canShort) {
-                    Text(
-                        "Facebook hides how its screens are built, so Reels need setting up with the Detection helper below.",
-                        fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
                 if (app == Apps.TIKTOK) {
                     Text("TikTok is all short video, so it can be allowed with limits or blocked.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }

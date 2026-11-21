@@ -4,7 +4,9 @@ import android.accessibilityservice.AccessibilityService
 import android.animation.ObjectAnimator
 import android.animation.ValueAnimator
 import android.graphics.Color
+import android.content.res.Configuration
 import android.graphics.PixelFormat
+import android.graphics.Rect
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.os.Handler
@@ -41,6 +43,11 @@ class Overlays(private val service: AccessibilityService) {
 
     val isShowing get() = current != null
 
+    fun dismissAll() {
+        dismiss()
+        setCovers(emptyList())
+    }
+
     fun dismiss() {
         main.removeCallbacksAndMessages(null)
         current?.let { runCatching { wm.removeView(it) } }
@@ -50,6 +57,65 @@ class Overlays(private val service: AccessibilityService) {
     }
 
     /* ---------------------------------------------------------------- */
+    /* Covers: solid patches over Shorts/Reels buttons, tabs and shelves  */
+    /* ---------------------------------------------------------------- */
+
+    private val covers = mutableListOf<View>()
+
+    /** Paints over each rect (screen coordinates) and swallows taps on it. Pass an empty list to clear. */
+    fun setCovers(rects: List<Rect>) {
+        while (covers.size > rects.size) runCatching { wm.removeView(covers.removeAt(covers.size - 1)) }
+        rects.forEachIndexed { i, r ->
+            val lp = coverParams(r)
+            if (i < covers.size) {
+                val v = covers[i]
+                (v.tag as? Rect)?.let { if (it == r) return@forEachIndexed }
+                v.tag = Rect(r)
+                (v as TextView).text = coverLabel(r)
+                runCatching { wm.updateViewLayout(v, lp) }
+            } else {
+                val v = TextView(service).apply {
+                    tag = Rect(r)
+                    text = coverLabel(r)
+                    gravity = Gravity.CENTER
+                    setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
+                    val dark = (service.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+                    setBackgroundColor(if (dark) Color.parseColor("#0F0F0F") else Color.WHITE)
+                    setTextColor(if (dark) Color.parseColor("#6F6A62") else Color.parseColor("#9C968D"))
+                    isClickable = true // taps stop here
+                }
+                runCatching { wm.addView(v, lp) }.onSuccess { covers += v }
+            }
+        }
+    }
+
+    private fun coverLabel(r: Rect) = if (r.height() > dp(56) && r.width() > dp(160)) "Hidden by Goosle" else ""
+
+    private fun coverParams(r: Rect) = WindowManager.LayoutParams(
+        r.width(), r.height(),
+        WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+        PixelFormat.OPAQUE,
+    ).apply {
+        gravity = Gravity.TOP or Gravity.START
+        x = r.left
+        y = r.top
+        if (android.os.Build.VERSION.SDK_INT >= 28) {
+            layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
+    }
+
+    /* ---------------------------------------------------------------- */
+
+    /** Full-screen block over a Shorts/Reels player. Stays until the player is gone. */
+    fun showShortFormBlocked(app: TargetApp, onBack: () -> Unit, onHome: () -> Unit) = show(app, "shortform") { card ->
+        val what = if (app == Apps.YOUTUBE) "Shorts" else "Reels"
+        card.addView(title("$what are blocked"))
+        card.addView(body("Goosle keeps ${app.name} free of $what. Go back to what you came for."))
+        card.addView(buttons(primary("Go back") { onBack() }, secondary("Close ${app.name}") { dismiss(); onHome() }))
+    }
 
     fun showBlocked(app: TargetApp, onHome: () -> Unit) = show(app, "block") { card ->
         card.addView(title("${app.name} is blocked"))

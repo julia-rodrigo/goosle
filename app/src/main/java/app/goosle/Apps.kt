@@ -21,10 +21,8 @@ data class TargetApp(
     val defaultMode: AppMode,
     /** View IDs (without the "package:id/" prefix) that only exist on a Shorts/Reels screen. */
     val shortFormIds: List<String> = emptyList(),
-    /** View IDs of algorithmic discovery screens (Explore and similar), blocked with short-form. */
-    val discoverIds: List<String> = emptyList(),
-    /** Whether short-form detection is reliable enough to offer NO_SHORT_FORM. */
-    val canDetectShortForm: Boolean = shortFormIds.isNotEmpty(),
+    /** Whether Goosle can find this app's Shorts/Reels (see Hider). */
+    val canDetectShortForm: Boolean = true,
     /** The web search URL used for weekly-focus shortcuts, if any. */
     val searchUrl: String? = null,
 )
@@ -56,21 +54,14 @@ object Apps {
             "root_clips_layout",
             "clips_video_container",
         ),
-        discoverIds = listOf(
-            "explore_action_bar_container",
-            "explore_grid_view",
-        ),
     )
 
     val FACEBOOK = TargetApp(
         key = "facebook",
         name = "Facebook",
         packages = listOf("com.facebook.katana", "com.facebook.lite"),
-        defaultMode = AppMode.ALLOW,
-        // Facebook hides its view IDs, so Reels can't be told apart out of the box.
-        // Use the Detection helper to find IDs on your phone and add them; then
-        // "No Shorts / Reels" becomes available for Facebook.
-        shortFormIds = emptyList(),
+        defaultMode = AppMode.NO_SHORT_FORM,
+        // Facebook hides its view IDs; Reels are found by their labels instead (see Hider).
     )
 
     val TIKTOK = TargetApp(

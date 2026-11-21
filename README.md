@@ -4,7 +4,7 @@ An Android app that makes YouTube, Instagram, Facebook and TikTok calmer, inside
 
 ## What it does
 
-- **No Shorts, no Reels.** When YouTube Shorts or Instagram Reels open, Goosle backs straight out of them. Instagram's Explore page too.
+- **Shorts and Reels are hidden.** In YouTube, Instagram and Facebook, Goosle paints solid blocks over the Shorts/Reels tab, Shorts shelves, single Shorts in search, and Reels in the feed, and those blocks swallow taps, so they can't be seen or opened. If a Shorts/Reels player opens anyway (from a link, say), a full-screen block covers it, Goosle presses Back, and the block stays until you've left. Finding them uses the labels the apps give screen readers ("Shorts", "Reels"), which survive app updates better than internal IDs.
 - **Block whole apps.** TikTok is blocked by default (it's all short video). Any app can be set to *Allow*, *No Shorts/Reels* or *Block*.
 - **This week's focus.** Tell Goosle what you're learning this week. When you open YouTube, it asks *"What are you here for?"* and offers your topics, which open as a YouTube search. "Something else" unlocks after 5 seconds.
 - **Break reminders.** After 20 minutes in an app (adjustable), a full-screen break covers it: breathe with the circle, and "I'm back" unlocks after 60 seconds.
@@ -37,9 +37,9 @@ No computer? *Settings → Digital Wellbeing → Bedtime mode → Grayscale* gre
 ## Limits
 
 - **Android only.** iPhones don't allow any app to see inside other apps.
-- **Screen detection uses view IDs, which apps can change in updates.** YouTube and Instagram IDs are built in. If an update lets Shorts or Reels through, use the **Detection helper** at the bottom of the app: record IDs while opening Reels, then add the new one for that app. Facebook hides its IDs, so Facebook Reels need this setup before "No Reels" is offered.
-- **The built-in IDs haven't been tested on a real phone yet**, because the build machine has no emulator. Expect to use the Detection helper at least once.
-- **Feeds can't be filtered post by post** inside the apps. Goosle can leave or cover a screen, not remove single videos or sponsored posts from a feed.
+- **Hiding works by covering, not deleting.** Android doesn't let one app remove parts of another app, so Goosle draws over them. While you scroll fast, a cover can lag a moment behind.
+- **Not yet tested on a real phone**, because the build machine has no emulator. Labels are matched in English; with the phone in another language some may slip through. If anything gets through, use the **Detection helper**: record IDs while the Reels/Shorts screen is open, then add the new one for that app.
+- **Only Shorts and Reels are found.** Single ads, sponsored posts or AI videos inside a feed aren't detected.
 - **Not on Google Play.** Play restricts accessibility-service apps, so this is installed directly from the APK.
 
 ## Build
