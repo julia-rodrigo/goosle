@@ -62,21 +62,23 @@ class Overlays(private val service: AccessibilityService) {
 
     private val covers = mutableListOf<View>()
 
-    /** Paints over each rect (screen coordinates) and swallows taps on it. Pass an empty list to clear. */
-    fun setCovers(rects: List<Rect>) {
-        while (covers.size > rects.size) runCatching { wm.removeView(covers.removeAt(covers.size - 1)) }
-        rects.forEachIndexed { i, r ->
+    /** Paints over each area (screen coordinates) and swallows taps on it. Pass an empty list to clear. */
+    fun setCovers(items: List<Hider.Cover>) {
+        while (covers.size > items.size) runCatching { wm.removeView(covers.removeAt(covers.size - 1)) }
+        items.forEachIndexed { i, c ->
+            val r = c.rect
             val lp = coverParams(r)
+            val text = if (r.height() > dp(56) && r.width() > dp(160)) c.label else ""
             if (i < covers.size) {
-                val v = covers[i]
-                (v.tag as? Rect)?.let { if (it == r) return@forEachIndexed }
+                val v = covers[i] as TextView
+                if (v.tag == r && v.text == text) return@forEachIndexed
                 v.tag = Rect(r)
-                (v as TextView).text = coverLabel(r)
+                v.text = text
                 runCatching { wm.updateViewLayout(v, lp) }
             } else {
                 val v = TextView(service).apply {
                     tag = Rect(r)
-                    text = coverLabel(r)
+                    this.text = text
                     gravity = Gravity.CENTER
                     setTextSize(TypedValue.COMPLEX_UNIT_SP, 13f)
                     val dark = (service.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
@@ -88,8 +90,6 @@ class Overlays(private val service: AccessibilityService) {
             }
         }
     }
-
-    private fun coverLabel(r: Rect) = if (r.height() > dp(56) && r.width() > dp(160)) "Hidden by Goosle" else ""
 
     private fun coverParams(r: Rect) = WindowManager.LayoutParams(
         r.width(), r.height(),

@@ -14,6 +14,11 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.graphics.ExperimentalAnimationGraphicsApi
+import androidx.compose.animation.graphics.res.animatedVectorResource
+import androidx.compose.animation.graphics.res.rememberAnimatedVectorPainter
+import androidx.compose.animation.graphics.vector.AnimatedImageVector
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -28,6 +33,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
@@ -108,6 +114,7 @@ fun Home(prefs: Prefs) {
                 Setup(ctx, prefs)
                 Focus(prefs, refresh)
                 AppsCard(prefs, refresh)
+                SlopCard(prefs, refresh)
                 AdBlockCard(ctx, prefs, refresh)
                 Breaks(prefs, refresh)
                 Today(prefs)
@@ -122,11 +129,35 @@ fun Home(prefs: Prefs) {
 @Composable
 private fun Header(prefs: Prefs, refresh: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Logo()
+        Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text("Goosle", fontSize = 28.sp, fontWeight = FontWeight.SemiBold)
             Text("Social media on your terms.", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Switch(checked = prefs.enabled, onCheckedChange = { prefs.enabled = it; refresh() })
+    }
+}
+
+/** The goose with dragon horns. It nods and blinks every few seconds. */
+@OptIn(ExperimentalAnimationGraphicsApi::class)
+@Composable
+private fun Logo() {
+    val image = AnimatedImageVector.animatedVectorResource(R.drawable.goose_animated)
+    var atEnd by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(600)
+            atEnd = !atEnd
+            delay(3400)
+        }
+    }
+    Box(Modifier.size(56.dp).clip(RoundedCornerShape(16.dp)).background(Color(0xFF1F2A2E))) {
+        Image(
+            painter = rememberAnimatedVectorPainter(image, atEnd),
+            contentDescription = "Goosle",
+            modifier = Modifier.fillMaxSize().scale(1.35f),
+        )
     }
 }
 
@@ -214,6 +245,33 @@ private fun AppsCard(prefs: Prefs, refresh: () -> Unit) {
                     Text("TikTok is all short video, so it can be allowed with limits or blocked.", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SlopCard(prefs: Prefs, refresh: () -> Unit) {
+    var showWords by remember { mutableStateOf(false) }
+    Card {
+        ToggleRow(
+            "Hide AI slop",
+            prefs.hideSlop,
+            "Covers videos, posts and reels in YouTube, Instagram and Facebook whose title, caption or channel " +
+                "mentions AI generation, like “AI generated”, “#aiart”, “Sora” or “Suno”.",
+        ) { prefs.hideSlop = it; refresh() }
+        if (prefs.hideSlop) {
+            Row(Modifier.fillMaxWidth().clickable { showWords = !showWords }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text("Words and phrases (${prefs.slopWords.size})", Modifier.weight(1f), fontWeight = FontWeight.Medium)
+                Text(if (showWords) "▲" else "▼", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (showWords) {
+                WordList(prefs.slopWords, "Add a word or phrase", onChange = { prefs.slopWords = it; refresh() })
+                TextButton(onClick = { prefs.slopWords = Slop.DEFAULT_WORDS; refresh() }) { Text("Reset to defaults") }
+            }
+            Text(
+                "It only catches slop that says what it is somewhere in its text. AI videos with no mention of AI can't be spotted from words.",
+                fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

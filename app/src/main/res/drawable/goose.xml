@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- Goosle: a goose with dragon horns. Drawn in a 108 box, scaled to fit the round icon mask. -->
+    <group android:name="root" android:pivotX="56" android:pivotY="52"
+        android:scaleX="0.7" android:scaleY="0.7" android:translateX="-1" android:translateY="6">
+        <group android:name="head" android:pivotX="50" android:pivotY="92">
+            <path android:name="horn_back" android:fillColor="#C9954A"
+                android:pathData="M58,30 C52,24 47,20 39,19 C33,18 29,14 28,8 C34,13 40,13 47,15 C54,17 60,22 64,28 Z" />
+            <path android:name="horn_front" android:fillColor="#E8C07A"
+                android:pathData="M55,34 C48,31 41,31 35,28 C29,25 26,20 26,14 C30,20 36,22 43,23 C50,24 56,27 60,31 Z" />
+            <path android:name="spines" android:fillColor="#E8C07A"
+                android:pathData="M52,44 L45,43 L51,49 Z M50,54 L43,55 L49,59 Z M45,64 L38,67 L45,69 Z" />
+            <path android:name="neck" android:fillColor="#FFFFFF"
+                android:pathData="M36,116 L36,92 C35,76 45,66 50,57 C54,50 51,44 53,37 C55,30 61,27 67,28 C74,29 78,34 77,41 C76,45 70,47 65,50 C59,55 57,65 61,76 C64,84 66,88 66,92 L66,116 Z" />
+            <path android:name="beak" android:fillColor="#F08A3C"
+                android:pathData="M75,35 C81,35 87,37 89,41 C85,44 80,45 75,44 C76,41 76,38 75,35 Z" />
+            <group android:name="eye" android:pivotX="67" android:pivotY="36">
+                <path android:fillColor="#F0B23C" android:pathData="M64,36 a3,3 0 1,0 6,0 a3,3 0 1,0 -6,0 Z" />
+                <path android:fillColor="#1C1B19" android:pathData="M66.1,36 a0.9,2.6 0 1,0 1.8,0 a0.9,2.6 0 1,0 -1.8,0 Z" />
+            </group>
+        </group>
+    </group>
+</vector>

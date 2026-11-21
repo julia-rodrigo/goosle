@@ -4,7 +4,7 @@ import android.graphics.Rect
 import android.view.accessibility.AccessibilityNodeInfo
 
 /**
- * Finds Shorts/Reels on screen inside a watched app.
+ * Finds Shorts/Reels and AI slop on screen inside a watched app.
  *
  * Two kinds of results:
  *  - covers: screen areas to paint over and make untappable (the Shorts/Reels tab,
@@ -17,7 +17,8 @@ import android.view.accessibility.AccessibilityNodeInfo
  * are still checked as a second signal.
  */
 object Hider {
-    data class Result(val covers: List<Rect>, val playerOpen: Boolean)
+    data class Cover(val rect: Rect, val label: String)
+    data class Result(val covers: List<Cover>, val playerOpen: Boolean)
 
     private data class Rules(
         /** Labels of the tab/button/shelf header itself, e.g. "Shorts". */
@@ -46,45 +47,93 @@ object Hider {
         ),
     )
 
-    fun scan(app: TargetApp, pkg: String, root: AccessibilityNodeInfo, screen: Rect, extraIds: List<String>): Result {
-        val rules = RULES[app.key] ?: return Result(emptyList(), false)
-        val covers = mutableListOf<Rect>()
+    /**
+     * @param shortForm hide Shorts/Reels
+     * @param slopWords hide feed items mentioning any of these (empty = off)
+     */
+    fun scan(
+        app: TargetApp,
+        pkg: String,
+        root: AccessibilityNodeInfo,
+        screen: Rect,
+        extraIds: List<String>,
+        shortForm: Boolean,
+        slopWords: List<String>,
+    ): Result {
+        val rules = if (shortForm) RULES[app.key] else null
+        val shortLabel = if (app == Apps.YOUTUBE) "Shorts hidden" else "Reels hidden"
+        val covers = mutableListOf<Cover>()
         var playerOpen = false
 
         // 1. Known player screens by view ID.
-        for (id in app.shortFormIds + extraIds) {
+        if (shortForm) for (id in app.shortFormIds + extraIds) {
             val full = if (id.contains(":id/")) id else "$pkg:id/$id"
             if (root.findAccessibilityNodeInfosByViewId(full).any { it.isVisibleToUser }) playerOpen = true
         }
 
         // 2. Walk the screen and match labels.
         val navBand = screen.height() / 7 // bottom/top bars live in this band
-        fun visit(n: AccessibilityNodeInfo, depth: Int) {
+        fun visit(n: AccessibilityNodeInfo, depth: Int, parentIsList: Boolean) {
             if (depth > 60 || !n.isVisibleToUser) return
+
+            // AI slop: a feed row (video, post, reel) whose words match the slop list.
+            if (parentIsList && slopWords.isNotEmpty()) {
+                val r = bounds(n)
+                if (r.width() >= screen.width() * 0.6 && r.height() < screen.height() * 0.9) {
+                    val hit = Slop.match(rowText(n), slopWords)
+                    if (hit != null) {
+                        covers += Cover(r, "AI slop hidden")
+                        return
+                    }
+                }
+            }
+
             val label = (n.contentDescription ?: n.text)?.toString()?.trim().orEmpty()
-            if (label.isNotEmpty() && label.length < 300) {
+            if (rules != null && label.isNotEmpty() && label.length < 300) {
                 when {
                     rules.tabLabel.matches(label) || rules.shelfLabel?.matches(label) == true -> {
                         val target = clickableAncestor(n) ?: n
                         val r = bounds(target)
                         val inNav = r.top >= screen.bottom - navBand || r.bottom <= screen.top + navBand
-                        if (isSmall(r, screen)) covers += r
+                        if (isSmall(r, screen)) covers += Cover(r, shortLabel)
                         // A selected Shorts/Reels tab means its player is open.
                         if (inNav && (target.isSelected || n.isSelected) && rules.tabLabel.matches(label)) playerOpen = true
                         // A "Shorts"/"Reels" header inside a feed: hide the whole section.
-                        if (!inNav) listItem(n, screen)?.let { covers += bounds(it) }
+                        if (!inNav) listItem(n, screen)?.let { covers += Cover(bounds(it), shortLabel) }
                     }
                     rules.itemLabel?.matches(label) == true -> {
                         val item = listItem(n, screen) ?: clickableAncestor(n)
-                        if (item != null) covers += bounds(item)
+                        if (item != null) covers += Cover(bounds(item), shortLabel)
                     }
                 }
             }
-            for (i in 0 until n.childCount) n.getChild(i)?.let { visit(it, depth + 1) }
+            val isList = isListContainer(n)
+            for (i in 0 until n.childCount) n.getChild(i)?.let { visit(it, depth + 1, isList) }
         }
-        visit(root, 0)
+        visit(root, 0, false)
 
-        return Result(covers.filter { !it.isEmpty && Rect.intersects(it, screen) }.distinct(), playerOpen)
+        return Result(
+            covers.filter { !it.rect.isEmpty && Rect.intersects(it.rect, screen) }.distinctBy { it.rect },
+            playerOpen,
+        )
+    }
+
+    private fun isListContainer(n: AccessibilityNodeInfo): Boolean {
+        val cls = n.className?.toString().orEmpty()
+        return cls.endsWith("RecyclerView") || cls.endsWith("ListView") || n.collectionInfo != null
+    }
+
+    /** All the words in a feed row: title, channel, caption, labels. */
+    private fun rowText(n: AccessibilityNodeInfo): String {
+        val sb = StringBuilder()
+        fun walk(x: AccessibilityNodeInfo, depth: Int) {
+            if (depth > 20 || sb.length > 2000) return
+            x.contentDescription?.let { sb.append(it).append('\n') }
+            x.text?.let { sb.append(it).append('\n') }
+            for (i in 0 until x.childCount) x.getChild(i)?.let { walk(it, depth + 1) }
+        }
+        walk(n, 0)
+        return sb.toString()
     }
 
     private fun bounds(n: AccessibilityNodeInfo) = Rect().also { n.getBoundsInScreen(it) }

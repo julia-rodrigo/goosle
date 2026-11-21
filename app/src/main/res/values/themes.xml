@@ -4,4 +4,5 @@
     </style>
     <color name="bg">#FAF8F4</color>
     <color name="accent">#C4542C</color>
+    <color name="logo_bg">#1F2A2E</color>
 </resources>

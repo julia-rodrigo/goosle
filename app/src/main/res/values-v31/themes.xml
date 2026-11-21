@@ -1,0 +1,8 @@
+<resources>
+    <style name="Theme.Goosle" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:windowSplashScreenBackground">@color/logo_bg</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/goose_animated</item>
+        <item name="android:windowSplashScreenAnimationDuration">900</item>
+    </style>
+</resources>

@@ -90,6 +90,16 @@ class Prefs(context: Context) {
         get() = list("debug.ids")
         set(v) = putList("debug.ids", v.takeLast(300))
 
+    /* ---------------- AI slop ---------------- */
+
+    var hideSlop: Boolean
+        get() = sp.getBoolean("slop.on", true)
+        set(v) = sp.edit().putBoolean("slop.on", v).apply()
+
+    var slopWords: List<String>
+        get() = if (sp.contains("slop.words")) list("slop.words") else Slop.DEFAULT_WORDS
+        set(v) = putList("slop.words", v)
+
     /* ---------------- Ad blocker (all apps) ---------------- */
 
     var adBlock: Boolean

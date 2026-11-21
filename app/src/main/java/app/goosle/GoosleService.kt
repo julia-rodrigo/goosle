@@ -133,7 +133,7 @@ class GoosleService : AccessibilityService() {
             return
         }
 
-        if (mode == AppMode.NO_SHORT_FORM) hideShortForm(app, pkg, root)
+        if (mode == AppMode.NO_SHORT_FORM || prefs.hideSlop) hideContent(app, pkg, root, mode == AppMode.NO_SHORT_FORM)
         else overlays.setCovers(emptyList())
 
         if (app == Apps.YOUTUBE && prefs.skipAds) skipAd(root, pkg)
@@ -147,13 +147,17 @@ class GoosleService : AccessibilityService() {
     }
 
     /**
-     * Paints over every Shorts/Reels entry point on screen so it can't be seen or tapped,
+     * Paints over every Shorts/Reels entry point and AI-slop item on screen so it can't be seen or tapped,
      * and blocks the whole screen if a Shorts/Reels player opens anyway (from a link, say).
      */
-    private fun hideShortForm(app: TargetApp, pkg: String, root: AccessibilityNodeInfo) {
+    private fun hideContent(app: TargetApp, pkg: String, root: AccessibilityNodeInfo, shortForm: Boolean) {
         val screen = Rect().also { root.getBoundsInScreen(it) }
         if (screen.isEmpty) return
-        val result = Hider.scan(app, pkg, root, screen, prefs.extraShortFormIds(app))
+        val result = Hider.scan(
+            app, pkg, root, screen, prefs.extraShortFormIds(app),
+            shortForm = shortForm,
+            slopWords = if (prefs.hideSlop) prefs.slopWords else emptyList(),
+        )
 
         if (result.playerOpen) {
             overlays.setCovers(emptyList())
